@@ -1,0 +1,83 @@
+<html>
+  <head>
+	<title>Get All Phone Facebook</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  </head>
+  <body>
+	Key: <input type="text" name="keyAPI" value="1454368857907654|eWtBMFPgol3Fws9U5pNuuFkOAzk" style="width: 350px;" />
+	<br /> <br />
+	Post: <input type="text" name="urlPost" style="width: 350px;" />
+	<button type="button" id="btnGET">GET</button>
+	<br /><br />
+	Status: <span id="status"></span>
+	<br /><br />
+	<textarea name="ouputPhone" cols="50" rows="20"></textarea>
+	
+	<script>
+		$(function() {
+			var graph_facebook = 'https://graph.facebook.com/v2.9/';
+			var comments = '/comments';
+			var limit = '&limit=100';
+			
+			$('#btnGET').off('click').on('click', function() {
+				$('textarea[name=ouputPhone]').empty();
+				$('#status').empty();
+				var key = $('input[name=keyAPI]').val();
+				var access_token = '?access_token='+ key;
+				var urlPost = $('input[name=urlPost]').val();
+				var pageUrl = urlPost.substring(urlPost.indexOf('com/') + 4, urlPost.lastIndexOf('posts/') - 1);
+				var postId = urlPost.substring(urlPost.lastIndexOf('posts/') + 6);
+				var url = graph_facebook + pageUrl + access_token;
+				$('#status').text(url);
+				$.ajax({
+					url: url,
+					success: function(result){
+						var pageIdAndPost = result.id + '_' + postId;
+						$.ajax({
+							url: graph_facebook + pageIdAndPost + comments + access_token + limit,
+							success: function(result){
+								console.log(result);
+								result.data.forEach(function(data, index) {
+									var message = data.message.replace(/[^0-9]/g,'');
+									if (message.length >= 8) {
+										$('textarea[name=ouputPhone]').append(message + '\n');
+									}
+								});
+								if (result.paging.next) {
+									nextPage(result.paging.next)
+								} else {
+									$('#status').text('Done');
+								}
+							}
+						});
+					}
+				});
+				console.log(pageUrl, postId);
+			});
+
+			function nextPage(url) {
+				$('#status').text(url);
+				$.ajax({
+					url: url,
+					success: function(result){
+						console.log('nextPage', result);
+						result.data.forEach(function(data, index) {
+							var message = data.message.replace(/[^0-9]/g,'');
+							if (message.length >= 8) {
+								$('textarea[name=ouputPhone]').append(message + '\n');
+							}
+						});
+						if (result.paging.next) {
+							nextPage(result.paging.next)
+						} else {
+							$('#status').text('Done');
+						}
+					}
+				});
+				
+			}
+		});
+	</script>
+	
+  </body>
+</html>

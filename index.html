@@ -18,40 +18,63 @@
 			var graph_facebook = 'https://graph.facebook.com/v2.9/';
 			var comments = '/comments';
 			var limit = '&limit=100';
-			
+			//https://www.facebook.com/permalink.php?story_fbid=1226626384123820&id=802630369856759
 			$('#btnGET').off('click').on('click', function() {
 				$('textarea[name=ouputPhone]').empty();
 				$('#status').empty();
 				var key = $('input[name=keyAPI]').val();
 				var access_token = '?access_token='+ key;
 				var urlPost = $('input[name=urlPost]').val();
-				var pageUrl = urlPost.substring(urlPost.indexOf('com/') + 4, urlPost.lastIndexOf('posts/') - 1);
-				var postId = urlPost.substring(urlPost.lastIndexOf('posts/') + 6);
-				var url = graph_facebook + pageUrl + access_token;
-				$('#status').text(url);
-				$.ajax({
-					url: url,
-					success: function(result){
-						var pageIdAndPost = result.id + '_' + postId;
-						$.ajax({
-							url: graph_facebook + pageIdAndPost + comments + access_token + limit,
-							success: function(result){
-								console.log(result);
-								result.data.forEach(function(data, index) {
-									var message = data.message.replace(/[^0-9]/g,'');
-									if (message.length >= 8) {
-										$('textarea[name=ouputPhone]').append(message + '\n');
-									}
-								});
-								if (result.paging.next) {
-									nextPage(result.paging.next)
-								} else {
-									$('#status').text('Done');
+				if (urlPost.indexOf('permalink.php') >= 0) {
+					var postId = getUrlParameter('story_fbid', urlPost);
+					var pageId = getUrlParameter('id', urlPost);
+					var pageIdAndPost = pageId + '_' + postId;
+					$.ajax({
+						url: graph_facebook + pageIdAndPost + comments + access_token + limit,
+						success: function(result){
+							//console.log(result);
+							result.data.forEach(function(data, index) {
+								var message = data.message.replace(/[^0-9]/g,'');
+								if (message.length >= 8) {
+									$('textarea[name=ouputPhone]').append(message + '\n');
 								}
+							});
+							if (result.paging.next) {
+								nextPage(result.paging.next)
+							} else {
+								$('#status').text('Done');
 							}
-						});
-					}
-				});
+						}
+					});
+				} else {
+					var pageUrl = urlPost.substring(urlPost.indexOf('com/') + 4, urlPost.lastIndexOf('posts/') - 1);
+					var postId = urlPost.substring(urlPost.lastIndexOf('posts/') + 6);
+					var url = graph_facebook + pageUrl + access_token;
+					$('#status').text(url);
+					$.ajax({
+						url: url,
+						success: function(result){
+							var pageIdAndPost = result.id + '_' + postId;
+							$.ajax({
+								url: graph_facebook + pageIdAndPost + comments + access_token + limit,
+								success: function(result){
+									//console.log(result);
+									result.data.forEach(function(data, index) {
+										var message = data.message.replace(/[^0-9]/g,'');
+										if (message.length >= 8) {
+											$('textarea[name=ouputPhone]').append(message + '\n');
+										}
+									});
+									if (result.paging.next) {
+										nextPage(result.paging.next)
+									} else {
+										$('#status').text('Done');
+									}
+								}
+							});
+						}
+					});
+				}
 				console.log(pageUrl, postId);
 			});
 
@@ -67,7 +90,7 @@
 								$('textarea[name=ouputPhone]').append(message + '\n');
 							}
 						});
-						if (result.paging.next) {
+						if (result.paging && result.paging.next) {
 							nextPage(result.paging.next)
 						} else {
 							$('#status').text('Done');
@@ -76,6 +99,13 @@
 				});
 				
 			}
+			
+			function getUrlParameter(name, url) {
+				name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+				var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+				var results = regex.exec(url);
+				return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+			};
 		});
 	</script>
 	
